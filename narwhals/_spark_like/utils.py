@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from pyspark.sql import types as pyspark_types
 
     from narwhals._spark_like.dataframe import SparkLikeLazyFrame
+    from narwhals._spark_like.expr import SparkLikeExpr
     from narwhals._spark_like.typing import IntoSparkLikeExpr
     from narwhals.dtypes import DType
     from narwhals.utils import Version
@@ -152,3 +153,9 @@ def _var(_input: Column | str, ddof: int, np_version: tuple[int, ...]) -> Column
 
     input_col = F.col(_input) if isinstance(_input, str) else _input
     return var(input_col, ddof=ddof)
+
+def binary_operation_returns_scalar(lhs: SparkLikeExpr, rhs: SparkLikeExpr | Any) -> bool:
+    # If `rhs` is a SparkLikeExpr, we look at `_returns_scalar`. If it isn't,
+    # it means that it was a scalar (e.g. nw.col('a') + 1), and so we default
+    # to `True`.
+    return lhs._returns_scalar and getattr(rhs, "_returns_scalar", True)

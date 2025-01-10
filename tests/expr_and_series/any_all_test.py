@@ -16,7 +16,7 @@ def test_any_all(constructor: Constructor) -> None:
             }
         )
     )
-    result = df.select(nw.col("a", "b", "c").all())
+    result = df.select(nw.all().all())
     expected = {"a": [False], "b": [True], "c": [False]}
     assert_equal_data(result, expected)
     result = df.select(nw.col("a", "b", "c").any())
