@@ -95,7 +95,10 @@ class SparkLikeLazyFrame:
             return self._from_native_frame(self._native_frame.select(*exprs))
 
         new_columns = parse_exprs_and_named_exprs(self, *exprs, **named_exprs)
-
+        all_returns_scalar = all(
+            getattr(expr, "_returns_scalar", False)
+            for expr in (*exprs, *named_exprs.values())
+        )
         if not new_columns:
             # return empty dataframe, like Polars does
             from pyspark.sql.types import StructType
@@ -106,7 +109,10 @@ class SparkLikeLazyFrame:
             return self._from_native_frame(spark_df)
 
         new_columns_list = [col.alias(col_name) for col_name, col in new_columns.items()]
-        return self._from_native_frame(self._native_frame.select(*new_columns_list))
+        native_result = self._native_frame.select(*new_columns_list)
+        if all_returns_scalar:
+            native_result = native_result.limit(1)
+        return self._from_native_frame(native_result)
 
     def filter(self, *predicates: SparkLikeExpr, **constraints: Any) -> Self:
         plx = self.__narwhals_namespace__()

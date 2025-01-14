@@ -110,14 +110,7 @@ def maybe_evaluate(df: SparkLikeLazyFrame, obj: Any) -> Any:
         if len(column_results) != 1:  # pragma: no cover
             msg = "Multi-output expressions (e.g. `nw.all()` or `nw.col('a', 'b')`) not supported in this context"
             raise NotImplementedError(msg)
-        column_result = column_results[0]
-        if obj._returns_scalar:
-            # Return scalar, let PySpark do its broadcasting
-            from pyspark.sql import functions as F  # noqa: N812
-            from pyspark.sql.window import Window
-
-            return column_result.over(Window.partitionBy(F.lit(1)))
-        return column_result
+        return column_results[0]
     return obj
 
 
@@ -153,6 +146,7 @@ def _var(_input: Column | str, ddof: int, np_version: tuple[int, ...]) -> Column
 
     input_col = F.col(_input) if isinstance(_input, str) else _input
     return var(input_col, ddof=ddof)
+
 
 def binary_operation_returns_scalar(lhs: SparkLikeExpr, rhs: SparkLikeExpr | Any) -> bool:
     # If `rhs` is a SparkLikeExpr, we look at `_returns_scalar`. If it isn't,

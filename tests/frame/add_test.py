@@ -13,9 +13,9 @@ def test_add(constructor: Constructor, request: pytest.FixtureRequest) -> None:
     data = {"a": [1, 3, 2], "b": [4, 4, 6], "z": [7.0, 8, 9]}
     df = nw.from_native(constructor(data))
     result = df.with_columns(
-        # c=nw.col("a") + nw.col("b"),
+        c=nw.col("a") + nw.col("b"),
         d=nw.col("a") - nw.col("a").mean(),
-        # e=nw.col("a") - nw.col("a").std(),
+        e=nw.col("a") - nw.col("a").std(),
     )
     expected = {
         "a": [1, 3, 2],

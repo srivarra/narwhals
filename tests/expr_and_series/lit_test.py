@@ -109,7 +109,6 @@ def test_lit_operation(
         "left_lit_with_agg",
         "left_scalar_with_agg",
         "right_lit_with_agg",
-        "right_lit",
     }:
         request.applymarker(pytest.mark.xfail)
 

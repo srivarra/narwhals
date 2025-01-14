@@ -98,14 +98,20 @@ class SparkLikeExpr(CompliantExpr["Column"]):
         **kwargs: Any,
     ) -> Self:
         def func(df: SparkLikeLazyFrame) -> list[Column]:
+            from pyspark.sql import functions as F  # noqa: N812
+            from pyspark.sql.window import Window
+
             results = []
             inputs = self._call(df)
             _kwargs = {key: maybe_evaluate(df, value) for key, value in kwargs.items()}
             for _input in inputs:
                 name = get_column_name(df, _input)
                 result = call(_input, **_kwargs)
-                # if not returns_scalar:
-                result = result.alias(name)
+                result = (
+                    result.over(Window.partitionBy(F.lit(1))).alias(name)
+                    if returns_scalar
+                    else result.alias(name)
+                )
                 results.append(result)
             return results
 
@@ -117,7 +123,7 @@ class SparkLikeExpr(CompliantExpr["Column"]):
             function_name=f"{self._function_name}->{expr_name}",
             root_names=root_names,
             output_names=output_names,
-            returns_scalar=self._returns_scalar or returns_scalar,
+            returns_scalar=returns_scalar,
             backend_version=self._backend_version,
             version=self._version,
             kwargs=kwargs,
