@@ -16,8 +16,8 @@ from narwhals._arrow.utils import select_rows
 from narwhals._arrow.utils import validate_dataframe_comparand
 from narwhals._expression_parsing import evaluate_into_exprs
 from narwhals.dependencies import is_numpy_array
-from narwhals.exceptions import ColumnNotFoundError
 from narwhals.utils import Implementation
+from narwhals.utils import check_column_exists
 from narwhals.utils import flatten
 from narwhals.utils import generate_temporary_column_name
 from narwhals.utils import is_sequence_but_not_str
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
     import numpy as np
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
     from typing_extensions import Self
 
@@ -333,7 +334,7 @@ class ArrowDataFrame(CompliantDataFrame, CompliantLazyFrame):
         self: Self,
         other: Self,
         *,
-        how: Literal["left", "inner", "outer", "cross", "anti", "semi"],
+        how: Literal["left", "inner", "cross", "anti", "semi"],
         left_on: str | list[str] | None,
         right_on: str | list[str] | None,
         suffix: str,
@@ -426,6 +427,11 @@ class ArrowDataFrame(CompliantDataFrame, CompliantLazyFrame):
 
     def to_pandas(self: Self) -> pd.DataFrame:
         return self._native_frame.to_pandas()
+
+    def to_polars(self: Self) -> pl.DataFrame:
+        import polars as pl  # ignore-banned-import
+
+        return pl.from_arrow(self._native_frame)  # type: ignore[return-value]
 
     def to_numpy(self: Self) -> np.ndarray:
         import numpy as np  # ignore-banned-import
@@ -642,9 +648,7 @@ class ArrowDataFrame(CompliantDataFrame, CompliantLazyFrame):
         import pyarrow.compute as pc
 
         df = self._native_frame
-        if subset is not None and any(x not in self.columns for x in subset):
-            msg = f"Column(s) {subset} not found in {self.columns}"
-            raise ColumnNotFoundError(msg)
+        check_column_exists(self.columns, subset)
         subset = subset or self.columns
 
         if keep in {"any", "first", "last"}:
